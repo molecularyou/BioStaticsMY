@@ -5,6 +5,10 @@ import pandas as pd
 
 
 class BioStatistics:
+    """
+                          This class has all the statistical functions that are required. Any future to add more features work should be added on top of this
+                          and then be manipulated inside the DFmaker class
+            """
 
     def __init__(self, array):
         self.array = array
@@ -141,10 +145,16 @@ class BioStatistics:
         high_RI = self.array[n - val]
 
     def low_lim(self):
+        """
+                          Returns lower limit of the Reference Range
+                """
         self.RI()
         return low_RI
 
     def high_lim(self):
+        """
+                                  Returns lower limit of the Reference Range
+                        """
         self.RI()
         return high_RI
 
@@ -171,31 +181,28 @@ class BioStatistics:
 
 
 class DFmaker:
+    """
+                          Makes the DataFrame for processing by the Biostatists
+                          @:param df_in is the input dataframe
+                          @:param age is the age subcategory "Adult" or "Child"
+                          @:param sex is the sex subcategory "Male" or "Female"
+                          @:param biofluid is the type of fluid being analysed "serum" or "plasma"
+
+            """
     def __init__(self, df_in, age=None, sex=None, biofluid=None):
         self.df_in = df_in
         self.age = age
         self.sex = sex
         self.biofluid = biofluid
 
-    def make_df(self):
-        self.df_in = pd.DataFrame(self.df_in)
-        # self.age = str(self.age or "")
-        # self.sex = str(self.sex or "")
-        # self.biofluid = str(self.biofluid or "")
 
-        ref_df = self.df_in
-        sex_requested = self.sex
-
-        age_requested = self.age
-
-
-
-        ref_df = ref_df.drop(['Test ID', 'sex', 'age_group'], axis=1)
-        return ref_df
 
 
     def df_out(self):
-        # adding MY biomarkers to update the list add the Biomarker and ID in the MY Biomarkers file
+        """
+        This is where the processing for the Reference Range happens
+        Remember:Adding MY biomarkers to update the list add the Biomarker and ID in the MY Biomarkers file"""
+
         df_bioMarker = pd.read_csv('MYBiomarkers.csv')
         temp_dict = dict(zip(df_bioMarker.Biomarker, df_bioMarker.MYID))
 
@@ -207,7 +214,7 @@ class DFmaker:
         ref_df.drop(ref_df[ref_df['sex'] != self.sex].index, inplace=True)
 
         ref_df.drop(ref_df[ref_df['age_group'] != self.age].index, inplace=True)
-        print(ref_df.age_group)
+
 
         ref_df = ref_df.drop(['Test ID', 'sex', 'age_group'], axis=1)
 
@@ -225,7 +232,7 @@ class DFmaker:
 
             if col_list[z] in temp_dict.keys():
                 ref_dic.update({col_list[z]: [temp_dict[col_list[z]], str(p.low_lim()) + " - " + str(p.high_lim()), self.age, self.sex, self.biofluid, "Calculated", "1"]})
-
+            #     add column keys in the dictionary above
             i = i + 1
             z = z + 1
             if i > j + 1:
