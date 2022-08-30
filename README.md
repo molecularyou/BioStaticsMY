@@ -31,7 +31,7 @@ df_exp.to_csv (r'sample_ref.csv', index = False, header=True)
 ## Useful Classes
 For more information to use other statistical features look into the ```Biostatistics```
 class under the ```stat_functions``` file
-Understand the ```DFmaker class for inputting subcategories of ```sex`` and ```age_group``` follow standard database format
+Understand the ```DFmaker``` class for inputting subcategories of ```sex``` and ```age_group``` follow standard database format
 
 ## Main Class
 Always make sure that the biomarkers are up to date in the ```MYBiomarkers.csv``` file. Code will fail if any new biomarkers are not added and updated to the file first.
