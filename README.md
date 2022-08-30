@@ -9,7 +9,6 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install the fol
 ```bash
 pip install numpy
 pip install scipy
-pip install scipy 
 pip install pandas
 ```
 
