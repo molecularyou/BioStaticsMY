@@ -171,23 +171,48 @@ class BioStatistics:
 
 
 class DFmaker:
-    def __init__(self, df_in):
+    def __init__(self, df_in, age=None, sex=None, biofluid=None):
         self.df_in = df_in
+        self.age = age
+        self.sex = sex
+        self.biofluid = biofluid
 
     def make_df(self):
         self.df_in = pd.DataFrame(self.df_in)
-        df = self.df_in.T
+        # self.age = str(self.age or "")
+        # self.sex = str(self.sex or "")
+        # self.biofluid = str(self.biofluid or "")
+
         ref_df = self.df_in
+        sex_requested = self.sex
+
+        age_requested = self.age
+
+
+
         ref_df = ref_df.drop(['Test ID', 'sex', 'age_group'], axis=1)
         return ref_df
 
 
     def df_out(self):
+        # adding MY biomarkers to update the list add the Biomarker and ID in the MY Biomarkers file
+        df_bioMarker = pd.read_csv('MYBiomarkers.csv')
+        temp_dict = dict(zip(df_bioMarker.Biomarker, df_bioMarker.MYID))
+
         self.df_in = pd.DataFrame(self.df_in)
+
         df = self.df_in.T
         ref_df = self.df_in
 
+        ref_df.drop(ref_df[ref_df['sex'] != self.sex].index, inplace=True)
+
+        ref_df.drop(ref_df[ref_df['age_group'] != self.age].index, inplace=True)
+        print(ref_df.age_group)
+
         ref_df = ref_df.drop(['Test ID', 'sex', 'age_group'], axis=1)
+
+
+
         col_list = ref_df.columns.to_list()
 
         ref_dic = {}
@@ -195,11 +220,11 @@ class DFmaker:
         i = 3
         j = len(df)
         z = 0
-
         while i < j:
             p = BioStatistics(df.iloc[i].to_numpy())
 
-            ref_dic.update({col_list[z]: [p.low_lim(), p.high_lim()]})
+            if col_list[z] in temp_dict.keys():
+                ref_dic.update({col_list[z]: [temp_dict[col_list[z]], str(p.low_lim()) + " - " + str(p.high_lim()), self.age, self.sex, self.biofluid, "Calculated", "1"]})
 
             i = i + 1
             z = z + 1
@@ -207,3 +232,4 @@ class DFmaker:
                 break
 
         return pd.DataFrame.from_dict(ref_dic)
+
