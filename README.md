@@ -38,7 +38,7 @@ Always make sure that the biomarkers are up to date in the ```MYBiomarkers.csv``
 
 If more columns are needed at the exported file then simply add columns to the column extension (second last line in main)
 
-##Documentation
+## Documentation
 '''BiostatisticsMY-Documentation.pdf``` has all the function details and what they are supposed to do
 
 ## Authors and acknowledgements
