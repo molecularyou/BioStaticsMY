@@ -1,16 +1,23 @@
-from stat_functions import *
+from stat_functions import DFmaker
 import pandas as pd
 
+# Input data file with concentrations
+df_in = pd.read_csv('medcalc_input_plasma_metabolomics.csv')
+# df_in = pd.read_csv('input.csv')
 
-df_in = pd.read_csv(
-    '/Users/pranavdhruv/Desktop/MY2022/MedCalcProject/SampleData/reference_range/medcalc_input_serum_metabolomics.csv')
+# Ensure biomarkers are up to date in the MYBiomarkers.csv file
 
-
-#always make sure that the biomarkers are up to date in the MYBiomarkers.csv file
-
-d = DFmaker(df_in,None,None, None) #input df for reference range calculation
+# Input df for reference range calculation
+d = DFmaker(df_in, None, None, None)
 
 df_exp = d.df_out().T
-df_exp.columns = ['measure_id', 'range', 'age', 'sex','biofluid','category', 'exported' ] #add more columns for future and update 
-# in the dictionary inside DFmaker
-df_exp.to_csv (r'sample_ref.csv', index = False, header=True) # for CSV maker
+df_exp.columns = [
+    'measure_id',
+    'range',
+    'age',
+    'sex',
+    'biofluid',
+    'category',
+    'exported'
+]
+df_exp.to_csv(r'output.csv', index=False, header=True)

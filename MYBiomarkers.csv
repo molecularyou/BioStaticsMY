@@ -1,19 +1,19 @@
 Biomarker,MYID
 3-(3-hydroxyphenyl)-3-hydroxypropionic acid,M00000564
 3-Hydroxyoleoylcarnitine,M00000502
-5_Hydroxyindole_3_acetic_acid,M00000565
+5-Hydroxyindole-3-acetic acid,M00000565
 Acetyl-Ornithine,M00000060
 Acetylcarnitine,M00000018
 Alanine,M00000036
-Alpha_amino_N_butyric_acid,M00000560
+Alpha-amino-N-butyric acid,M00000560
 alpha-Aminoadipic acid,M00000062
 alpha-Ketoglutaric acid,M00000619
 Arginine,M00000037
 Asparagine,M00000038
 Aspartic acid,M00000039
 Asymmetric dimethylarginine,M00000061
-Benzoic_acid,M00000643
-Beta_alanine,M00000556
+Benzoic acid,M00000643
+Beta-alanine,M00000556
 beta-Hydroxybutyric acid,M00000618
 Betaine,M00000505
 Butenylcarnitine,M00000025
@@ -37,7 +37,7 @@ Dodecenoylcarnitine,M00000006
 Dopa,M00000626
 Dopamine,M00000625
 Fumaric acid,M00000609
-Gamma_aminobutyric_acid,M00000561
+Gamma-aminobutyric acid,M00000561
 Glucose,M00000171
 Glutaconylcarnitine,M00000030
 Glutamic acid,M00000042
@@ -56,7 +56,7 @@ Homovanillic acid,M00000612
 Hydroxyhexadecadienylcarnitine,M00000542
 Hydroxyhexadecanoylcarnitine,M00000013
 Hydroxyhexadecenoylcarnitine,M00000541
-Hydroxyphenylacetic_acid,M00000574
+Hydroxyphenylacetic acid,M00000574
 Hydroxypropionylcarnitine,M00000021
 Hydroxysphingomyeline C14:1,M00000156
 Hydroxysphingomyeline C16:1,M00000157
@@ -116,7 +116,7 @@ Phosphatidylcholine diacyl C40:6,M00000112
 Phosphocreatine,M00000606
 Pimelylcarnitine,M00000033
 Proline,M00000051
-Proline_Betaine,M00000558
+Proline-Betaine,M00000558
 Propenoylcarnitine,M00000022
 Propionic acid,M00000608
 Propionylcarnitine,M00000019
