@@ -196,9 +196,9 @@ class DFmaker:
         Add the Biomarker and ID in the MY Biomarkers file
         """
 
-        df_bioMarker = pd.read_csv('MYBiomarkers.csv')
+        df_biomarkers = pd.read_csv('MYBiomarkers.csv')
         biomarker_name_id_dict = dict(
-            zip(df_bioMarker.Biomarker, df_bioMarker.MYID)
+            zip(df_biomarkers.Biomarker, df_biomarkers.MYID)
         )
 
         self.df_in = pd.DataFrame(self.df_in)
