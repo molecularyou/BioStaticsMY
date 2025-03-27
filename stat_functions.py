@@ -201,8 +201,6 @@ class DFmaker:
             zip(df_biomarkers.Biomarker, df_biomarkers.MYID)
         )
 
-        self.df_in = pd.DataFrame(self.df_in)
-
         df = self.df_in.T
         ref_df = self.df_in
 
