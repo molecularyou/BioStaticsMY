@@ -2,6 +2,13 @@ import numpy as np
 import scipy as sc
 import pandas as pd
 
+DEFAULT_AGE = 'Adult'
+DEFAULT_SEX = 'Both'
+DEFAULT_BIOFLUID = 'plasma'
+DEFAULT_UNITS = 'fmol/μL'
+DEFAULT_CATEGORY = 'Calculated'
+DEFAULT_REFERENCE = 'BioStatistics'
+DEFAULT_EXPORTED = '1'
 
 class BioStatistics:
     """
@@ -138,25 +145,11 @@ class BioStatistics:
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
-        global low_RI, high_RI, n
         n = self.array.size
         val = round((n + 1) * .025)
         low_RI = self.array[val - 1]
         high_RI = self.array[n - val]
-
-    def low_lim(self):
-        """
-        Returns lower limit of the Reference Range
-        """
-        self.RI()
-        return low_RI
-
-    def high_lim(self):
-        """
-        Returns lower limit of the Reference Range
-        """
-        self.RI()
-        return high_RI
+        return low_RI, high_RI
 
     def para_outlier(self):
         """
@@ -184,15 +177,17 @@ class DFmaker:
     Makes the DataFrame for processing by the Biostatistics
 
     @:param df_in is the input dataframe
-    @:param age is the age subcategory "Adult" or "Child"
-    @:param sex is the sex subcategory "Male" or "Female"
-    @:param biofluid is the type of fluid being analysed "serum" or "plasma"
+    @:param age is "Adult" or "Child"
+    @:param sex is "Male", "Female", or "Both"
+    @:param biofluid is the type of fluid being analyzed "serum" or "plasma"
+    @:param units is the concentration units
     """
-    def __init__(self, df_in, age=None, sex=None, biofluid=None):
+    def __init__(self, df_in, age=None, sex=None, biofluid=None, units=None):
         self.df_in = df_in
-        self.age = age
-        self.sex = sex
-        self.biofluid = biofluid
+        self.age = age or DEFAULT_AGE
+        self.sex = sex or DEFAULT_SEX
+        self.biofluid = biofluid or DEFAULT_BIOFLUID
+        self.units = units or DEFAULT_UNITS
 
     def df_out(self):
         """
@@ -201,10 +196,10 @@ class DFmaker:
         Add the Biomarker and ID in the MY Biomarkers file
         """
 
-        df_bioMarker = pd.read_csv('MYBiomarkers.csv')
-        temp_dict = dict(zip(df_bioMarker.Biomarker, df_bioMarker.MYID))
-
-        self.df_in = pd.DataFrame(self.df_in)
+        df_biomarkers = pd.read_csv('MYBiomarkers.csv')
+        biomarker_name_id_dict = dict(
+            zip(df_biomarkers.Biomarker, df_biomarkers.MYID)
+        )
 
         df = self.df_in.T
         ref_df = self.df_in
@@ -228,16 +223,20 @@ class DFmaker:
         while i < j:
             p = BioStatistics(df.iloc[i].to_numpy())
 
-            if col_list[z] in temp_dict.keys():
+            if col_list[z] in biomarker_name_id_dict.keys():
+                lower_range, upper_range = p.RI()
                 ref_dic.update({
                     col_list[z]: [
-                        temp_dict[col_list[z]],
-                        str(p.low_lim()) + " - " + str(p.high_lim()),
+                        biomarker_name_id_dict[col_list[z]],
+                        lower_range,
+                        upper_range,
+                        self.units,
                         self.age,
                         self.sex,
                         self.biofluid,
-                        "Calculated",
-                        "1"
+                        DEFAULT_CATEGORY,
+                        DEFAULT_REFERENCE,
+                        DEFAULT_EXPORTED
                     ]
                 })
 
