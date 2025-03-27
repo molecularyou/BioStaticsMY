@@ -202,7 +202,9 @@ class DFmaker:
         """
 
         df_bioMarker = pd.read_csv('MYBiomarkers.csv')
-        temp_dict = dict(zip(df_bioMarker.Biomarker, df_bioMarker.MYID))
+        biomarker_name_id_dict = dict(
+            zip(df_bioMarker.Biomarker, df_bioMarker.MYID)
+        )
 
         self.df_in = pd.DataFrame(self.df_in)
 
@@ -228,10 +230,10 @@ class DFmaker:
         while i < j:
             p = BioStatistics(df.iloc[i].to_numpy())
 
-            if col_list[z] in temp_dict.keys():
+            if col_list[z] in biomarker_name_id_dict.keys():
                 ref_dic.update({
                     col_list[z]: [
-                        temp_dict[col_list[z]],
+                        biomarker_name_id_dict[col_list[z]],
                         str(p.low_lim()) + " - " + str(p.high_lim()),
                         self.age,
                         self.sex,
