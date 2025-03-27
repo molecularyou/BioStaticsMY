@@ -5,7 +5,7 @@ import pandas as pd
 DEFAULT_AGE = 'Adult'
 DEFAULT_SEX = 'Both'
 DEFAULT_BIOFLUID = 'plasma'
-DEFAULT_UNITS = 'fmol/μL'
+DEFAULT_UNITS = 'nM'
 DEFAULT_CATEGORY = 'Calculated'
 DEFAULT_REFERENCE = 'BioStatistics'
 DEFAULT_EXPORTED = '1'
