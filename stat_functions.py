@@ -2,6 +2,13 @@ import numpy as np
 import scipy as sc
 import pandas as pd
 
+DEFAULT_AGE = 'Adult'
+DEFAULT_SEX = 'Both'
+DEFAULT_BIOFLUID = 'plasma'
+DEFAULT_UNITS = 'fmol/μL'
+DEFAULT_CATEGORY = 'Calculated'
+DEFAULT_REFERENCE = 'BioStatistics'
+DEFAULT_EXPORTED = '1'
 
 class BioStatistics:
     """
@@ -170,15 +177,17 @@ class DFmaker:
     Makes the DataFrame for processing by the Biostatistics
 
     @:param df_in is the input dataframe
-    @:param age is the age subcategory "Adult" or "Child"
-    @:param sex is the sex subcategory "Male" or "Female"
-    @:param biofluid is the type of fluid being analysed "serum" or "plasma"
+    @:param age is "Adult" or "Child"
+    @:param sex is "Male", "Female", or "Both"
+    @:param biofluid is the type of fluid being analyzed "serum" or "plasma"
+    @:param units is the concentration units
     """
-    def __init__(self, df_in, age=None, sex=None, biofluid=None):
+    def __init__(self, df_in, age=None, sex=None, biofluid=None, units=None):
         self.df_in = df_in
-        self.age = age
-        self.sex = sex
-        self.biofluid = biofluid
+        self.age = age or DEFAULT_AGE
+        self.sex = sex or DEFAULT_SEX
+        self.biofluid = biofluid or DEFAULT_BIOFLUID
+        self.units = units or DEFAULT_UNITS
 
     def df_out(self):
         """
@@ -221,12 +230,15 @@ class DFmaker:
                 ref_dic.update({
                     col_list[z]: [
                         biomarker_name_id_dict[col_list[z]],
-                        str(lower_range) + " - " + str(upper_range),
+                        lower_range,
+                        upper_range,
+                        self.units,
                         self.age,
                         self.sex,
                         self.biofluid,
-                        "Calculated",
-                        "1"
+                        DEFAULT_CATEGORY,
+                        DEFAULT_REFERENCE,
+                        DEFAULT_EXPORTED
                     ]
                 })
 
