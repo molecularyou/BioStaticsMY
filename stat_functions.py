@@ -138,25 +138,11 @@ class BioStatistics:
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
-        global low_RI, high_RI, n
         n = self.array.size
         val = round((n + 1) * .025)
         low_RI = self.array[val - 1]
         high_RI = self.array[n - val]
-
-    def low_lim(self):
-        """
-        Returns lower limit of the Reference Range
-        """
-        self.RI()
-        return low_RI
-
-    def high_lim(self):
-        """
-        Returns lower limit of the Reference Range
-        """
-        self.RI()
-        return high_RI
+        return low_RI, high_RI
 
     def para_outlier(self):
         """
@@ -231,10 +217,11 @@ class DFmaker:
             p = BioStatistics(df.iloc[i].to_numpy())
 
             if col_list[z] in biomarker_name_id_dict.keys():
+                lower_range, upper_range = p.RI()
                 ref_dic.update({
                     col_list[z]: [
                         biomarker_name_id_dict[col_list[z]],
-                        str(p.low_lim()) + " - " + str(p.high_lim()),
+                        str(lower_range) + " - " + str(upper_range),
                         self.age,
                         self.sex,
                         self.biofluid,
