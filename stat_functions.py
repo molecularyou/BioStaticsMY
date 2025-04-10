@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sc
 import pandas as pd
 
+DEFAULT_CI = 95
 DEFAULT_AGE = 'Adult'
 DEFAULT_SEX = 'Both'
 DEFAULT_BIOFLUID = 'plasma'
@@ -141,10 +142,22 @@ class BioStatistics:
         shap_wilk_val = sc.stats.shapiro(self.array)
         return shap_wilk_val
 
+    def ci_percentiles(self, confidence_interval):
+        """
+        Calculates lower and upper percentiles given a confidence interval
+        e.g. For 95% CI, lower percentile = (100 - 95) / 2 = 2.5
+        e.g. For 95% CI, upper percentile = 100 - 2.5 = 97.5
+        """
+        lower_percentile = (100 - confidence_interval) / 2
+        upper_percentile = 100 - lower_percentile
+        return lower_percentile, upper_percentile
+
     def reference_interval(self):
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
+        lower_percentile, upper_percentile = self.ci_percentiles(DEFAULT_CI)
+
         n = self.array.size
         val = round((n + 1) * .025)
         low_RI = self.array[val - 1]
