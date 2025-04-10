@@ -172,17 +172,25 @@ class BioStatistics:
         upper_percentile = 100 - lower_percentile
         return lower_percentile, upper_percentile
 
-    def reference_interval(self):
+    def reference_interval(self, lloq=None):
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
         lower_percentile, upper_percentile = self.ci_percentiles(DEFAULT_CI)
 
-        n = self.array.size
-        val = round((n + 1) * .025)
-        low_RI = self.array[val - 1]
-        high_RI = self.array[n - val]
-        return low_RI, high_RI
+        if self.is_normally_distributed() is True:
+            lower_limit = np.nanpercentile(self.array, lower_percentile)
+            upper_limit = np.nanpercentile(self.array, upper_percentile)
+        else:
+            transformed_data = self.log_transform(lloq)
+            lower_limit = np.exp(
+                np.nanpercentile(transformed_data, lower_percentile)
+            )
+            upper_limit = np.exp(
+                np.nanpercentile(transformed_data, upper_percentile)
+            )
+
+        return lower_limit, upper_limit
 
     def para_outlier(self):
         """
@@ -275,7 +283,9 @@ class DFmaker:
             p = BioStatistics(df.iloc[i].to_numpy())
 
             if col_list[z] in biomarker_dict.keys():
-                lower_limit, upper_limit = p.reference_interval()
+                lloq = biomarker_dict[col_list[z]]['lloq']
+                lower_limit, upper_limit = p.reference_interval(lloq)
+
                 ref_dic.update({
                     col_list[z]: [
                         biomarker_dict[col_list[z]]['id'],
