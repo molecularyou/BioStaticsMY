@@ -1,3 +1,4 @@
+import csv
 import numpy as np
 import scipy as sc
 import pandas as pd
@@ -211,17 +212,33 @@ class DFmaker:
         self.biofluid = biofluid or DEFAULT_BIOFLUID
         self.units = units or DEFAULT_UNITS
 
+    def biomarker_dict(self):
+        """
+        Creates a dictionary of biomarker names mapped to IDs and LLOQs
+        using data stored in MYBiomarkers.csv
+
+        e.g. { 'Alanine': { 'id': 'M00000036', 'lloq': 1.093290116 } }
+        """
+
+        biomarker_dict = {}
+
+        with open('MYBiomarkers.csv', newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                lloq = None if not row['LLOQ'] else float(row['LLOQ'])
+
+                biomarker_dict[row['Biomarker']] = {
+                    "id": row['MYID'],
+                    "lloq": lloq
+                }
+
+        return biomarker_dict
+
     def df_out(self):
         """
         This is where the processing for the Reference Range happens
-        Remember: To add MY biomarkers to update the list
-        Add the Biomarker and ID in the MY Biomarkers file
         """
-
-        df_biomarkers = pd.read_csv('MYBiomarkers.csv')
-        biomarker_name_id_dict = dict(
-            zip(df_biomarkers.Biomarker, df_biomarkers.MYID)
-        )
+        biomarker_dict = self.biomarker_dict()
 
         df = self.df_in.T
         ref_df = self.df_in
@@ -245,11 +262,11 @@ class DFmaker:
         while i < j:
             p = BioStatistics(df.iloc[i].to_numpy())
 
-            if col_list[z] in biomarker_name_id_dict.keys():
+            if col_list[z] in biomarker_dict.keys():
                 lower_limit, upper_limit = p.reference_interval()
                 ref_dic.update({
                     col_list[z]: [
-                        biomarker_name_id_dict[col_list[z]],
+                        biomarker_dict[col_list[z]]['id'],
                         lower_limit,
                         upper_limit,
                         self.units,
