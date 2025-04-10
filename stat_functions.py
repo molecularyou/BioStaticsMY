@@ -141,7 +141,7 @@ class BioStatistics:
         shap_wilk_val = sc.stats.shapiro(self.array)
         return shap_wilk_val
 
-    def RI(self):
+    def reference_interval(self):
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
@@ -155,8 +155,10 @@ class BioStatistics:
         """
         Removes outliers accordance to CLSI guidelines
         """
-        self.RI()
-        high = high_RI
+        n = self.array.size
+        _lower_limit, upper_limit = self.reference_interval()
+
+        high = upper_limit
         i = 0
         while i < n - 2:
             current_val = self.array[i]
@@ -224,12 +226,12 @@ class DFmaker:
             p = BioStatistics(df.iloc[i].to_numpy())
 
             if col_list[z] in biomarker_name_id_dict.keys():
-                lower_range, upper_range = p.RI()
+                lower_limit, upper_limit = p.reference_interval()
                 ref_dic.update({
                     col_list[z]: [
                         biomarker_name_id_dict[col_list[z]],
-                        lower_range,
-                        upper_range,
+                        lower_limit,
+                        upper_limit,
                         self.units,
                         self.age,
                         self.sex,
