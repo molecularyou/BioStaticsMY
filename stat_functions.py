@@ -11,6 +11,7 @@ DEFAULT_CATEGORY = 'Calculated'
 DEFAULT_REFERENCE = 'BioStatistics'
 DEFAULT_EXPORTED = '1'
 
+
 class BioStatistics:
     """
     This class has all the statistical functions that are required.
@@ -141,6 +142,9 @@ class BioStatistics:
         """
         shap_wilk_val = sc.stats.shapiro(self.array)
         return shap_wilk_val
+
+    def is_normally_distributed(self):
+        return True if self.shapiro_wilk_test().pvalue > 0.05 else False
 
     def ci_percentiles(self, confidence_interval):
         """
