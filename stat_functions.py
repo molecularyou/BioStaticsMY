@@ -1,14 +1,17 @@
+import csv
 import numpy as np
 import scipy as sc
 import pandas as pd
 
+DEFAULT_CI = 95
 DEFAULT_AGE = 'Adult'
 DEFAULT_SEX = 'Both'
 DEFAULT_BIOFLUID = 'plasma'
-DEFAULT_UNITS = 'fmol/μL'
+DEFAULT_UNITS = 'nM'
 DEFAULT_CATEGORY = 'Calculated'
 DEFAULT_REFERENCE = 'BioStatistics'
 DEFAULT_EXPORTED = '1'
+
 
 class BioStatistics:
     """
@@ -76,12 +79,24 @@ class BioStatistics:
         result = np.percentile(arr, 75) - np.percentile(arr, 25)
         return result
 
-    def log_transform(self):
+    def log_transform(self, lloq=None):
         """
         Log transformation of the data
+
+        Converts all zeroes to the biomarker LLOQ / 2 if present,
+        otherwise converts zeroes to nan
         """
-        lg_transform = np.log(self.array.astype(float))
-        return lg_transform
+        float_array = self.array.astype(float)
+
+        if self.contains_zeroes():
+            if not lloq:
+                replacement_value = 'nan'
+            else:
+                replacement_value = float(lloq) / 2
+
+            float_array[float_array == 0] = replacement_value
+
+        return np.log(float_array)
 
     def exp_transform(self):
         """
@@ -141,22 +156,50 @@ class BioStatistics:
         shap_wilk_val = sc.stats.shapiro(self.array)
         return shap_wilk_val
 
-    def RI(self):
+    def is_normally_distributed(self):
+        return True if self.shapiro_wilk_test().pvalue > 0.05 else False
+
+    def contains_zeroes(self):
+        return False if np.all(self.array) else True
+
+    def ci_percentiles(self, confidence_interval):
+        """
+        Calculates lower and upper percentiles given a confidence interval
+        e.g. For 95% CI, lower percentile = (100 - 95) / 2 = 2.5
+        e.g. For 95% CI, upper percentile = 100 - 2.5 = 97.5
+        """
+        lower_percentile = (100 - confidence_interval) / 2
+        upper_percentile = 100 - lower_percentile
+        return lower_percentile, upper_percentile
+
+    def reference_interval(self, lloq=None):
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
-        n = self.array.size
-        val = round((n + 1) * .025)
-        low_RI = self.array[val - 1]
-        high_RI = self.array[n - val]
-        return low_RI, high_RI
+        lower_percentile, upper_percentile = self.ci_percentiles(DEFAULT_CI)
+
+        if self.is_normally_distributed() is True:
+            lower_limit = np.nanpercentile(self.array, lower_percentile)
+            upper_limit = np.nanpercentile(self.array, upper_percentile)
+        else:
+            transformed_data = self.log_transform(lloq)
+            lower_limit = np.exp(
+                np.nanpercentile(transformed_data, lower_percentile)
+            )
+            upper_limit = np.exp(
+                np.nanpercentile(transformed_data, upper_percentile)
+            )
+
+        return lower_limit, upper_limit
 
     def para_outlier(self):
         """
         Removes outliers accordance to CLSI guidelines
         """
-        self.RI()
-        high = high_RI
+        n = self.array.size
+        _lower_limit, upper_limit = self.reference_interval()
+
+        high = upper_limit
         i = 0
         while i < n - 2:
             current_val = self.array[i]
@@ -189,17 +232,33 @@ class DFmaker:
         self.biofluid = biofluid or DEFAULT_BIOFLUID
         self.units = units or DEFAULT_UNITS
 
+    def biomarker_dict(self):
+        """
+        Creates a dictionary of biomarker names mapped to IDs and LLOQs
+        using data stored in MYBiomarkers.csv
+
+        e.g. { 'Alanine': { 'id': 'M00000036', 'lloq': 1.093290116 } }
+        """
+
+        biomarker_dict = {}
+
+        with open('MYBiomarkers.csv', newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                lloq = None if not row['LLOQ'] else float(row['LLOQ'])
+
+                biomarker_dict[row['Biomarker']] = {
+                    "id": row['MYID'],
+                    "lloq": lloq
+                }
+
+        return biomarker_dict
+
     def df_out(self):
         """
         This is where the processing for the Reference Range happens
-        Remember: To add MY biomarkers to update the list
-        Add the Biomarker and ID in the MY Biomarkers file
         """
-
-        df_biomarkers = pd.read_csv('MYBiomarkers.csv')
-        biomarker_name_id_dict = dict(
-            zip(df_biomarkers.Biomarker, df_biomarkers.MYID)
-        )
+        biomarker_dict = self.biomarker_dict()
 
         df = self.df_in.T
         ref_df = self.df_in
@@ -223,13 +282,15 @@ class DFmaker:
         while i < j:
             p = BioStatistics(df.iloc[i].to_numpy())
 
-            if col_list[z] in biomarker_name_id_dict.keys():
-                lower_range, upper_range = p.RI()
+            if col_list[z] in biomarker_dict.keys():
+                lloq = biomarker_dict[col_list[z]]['lloq']
+                lower_limit, upper_limit = p.reference_interval(lloq)
+
                 ref_dic.update({
                     col_list[z]: [
-                        biomarker_name_id_dict[col_list[z]],
-                        lower_range,
-                        upper_range,
+                        biomarker_dict[col_list[z]]['id'],
+                        lower_limit,
+                        upper_limit,
                         self.units,
                         self.age,
                         self.sex,
