@@ -79,12 +79,24 @@ class BioStatistics:
         result = np.percentile(arr, 75) - np.percentile(arr, 25)
         return result
 
-    def log_transform(self):
+    def log_transform(self, lloq=None):
         """
         Log transformation of the data
+
+        Converts all zeroes to the biomarker LLOQ / 2 if present,
+        otherwise converts zeroes to nan
         """
-        lg_transform = np.log(self.array.astype(float))
-        return lg_transform
+        float_array = self.array.astype(float)
+
+        if self.contains_zeroes():
+            if not lloq:
+                replacement_value = 'nan'
+            else:
+                replacement_value = float(lloq) / 2
+
+            float_array[float_array == 0] = replacement_value
+
+        return np.log(float_array)
 
     def exp_transform(self):
         """
