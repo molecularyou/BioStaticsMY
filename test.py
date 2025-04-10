@@ -209,71 +209,74 @@ al_arr_combo = np.array([
 
 
 class TestRI(unittest.TestCase):
+    """
+    Test data reproduces the data used to calculate the 95% reference intervals
+    for calcium and alanine aminotransferase (AlaAT) on page 20 in the CLSI
+    documentation. However, BioStatistics now uses a different methodology to
+    calculate reference intervals, and thus the intervals (i.e. lower and upper
+    limits) in the test_RI methods differ from the paper.
 
+    Original URL: https://docs.ufpr.br/~taconeli/CE06219/Artigo_FR3.pdf
+    """
     def test_RI_cal_combo(self):
-        """
-        Testing the functions using the CLSI documentation
-        URL: https://docs.ufpr.br/~taconeli/CE06219/Artigo_FR3.pdf
-        Testing for Calcium can refer pg 20 in the URL
-        """
         t_combo_cal = BioStatistics(cal_arr_combo)
-        self.assertEqual(t_combo_cal.high_lim(), 10.3, "Should be 10.3")
-        self.assertEqual(t_combo_cal.low_lim(), 9.1, "Should be 9.1")
+        lower_limit, upper_limit = t_combo_cal.reference_interval()
+        self.assertEqual(round(lower_limit, 2), 9.1, 'Should be 9.1')
+        self.assertEqual(round(upper_limit, 2), 10.3, 'Should be 10.3')
 
     def test_RI_cal_men(self):
         t_men_cal = BioStatistics(men_cal_arr)
-        self.assertEqual(t_men_cal.high_lim(), 10.3, "Should be 10.3")
-        self.assertEqual(t_men_cal.low_lim(), 9.2, "Should be 9.2")
+        lower_limit, upper_limit = t_men_cal.reference_interval()
+        self.assertEqual(round(lower_limit, 2), 9.3, 'Should be 9.3')
+        self.assertEqual(round(upper_limit, 2), 10.3, 'Should be 10.3')
 
     def test_RI_cal_women(self):
         t_women_cal = BioStatistics(women_cal_arr)
-        self.assertEqual(t_women_cal.high_lim(), 10.2, "Should be 10.2")
-        self.assertEqual(t_women_cal.low_lim(), 8.9, "Should be 8.9")
+        lower_limit, upper_limit = t_women_cal.reference_interval()
+        self.assertEqual(round(lower_limit, 2), 9.0, 'Should be 9.0')
+        self.assertEqual(round(upper_limit, 2), 10.2, 'Should be 10.2')
 
     def test_RI_al_combo(self):
-        """
-        Testing the functions using the CLSI documentation
-        URL: https://docs.ufpr.br/~taconeli/CE06219/Artigo_FR3.pdf
-        Testing for Alanine (AlaAT) can refer pg 20 in the URL
-        """
         t_combo_al = BioStatistics(al_arr_combo)
-        self.assertEqual(t_combo_al.high_lim(), 54, "Should be 54")
-        self.assertEqual(t_combo_al.low_lim(), 8, "Should be 8")
+        lower_limit, upper_limit = t_combo_al.reference_interval()
+        self.assertEqual(round(lower_limit), 8, 'Should be 8')
+        self.assertEqual(round(upper_limit), 53, 'Should be 53')
 
     def test_RI_al_men(self):
         t_men_al = BioStatistics(men_al_arr)
-        self.assertEqual(t_men_al.high_lim(), 55, "Should be 55")
-        self.assertEqual(t_men_al.low_lim(), 10, "Should be 10")
+        lower_limit, upper_limit = t_men_al.reference_interval()
+        self.assertEqual(round(lower_limit), 11, 'Should be 11')
+        self.assertEqual(round(upper_limit), 55, 'Should be 55')
 
     def test_RI_al_women(self):
         t_women_al = BioStatistics(women_al_arr)
-        self.assertEqual(t_women_al.high_lim(), 46, "Should be 46")
-        self.assertEqual(t_women_al.low_lim(), 6, "Should be 6")
+        lower_limit, upper_limit = t_women_al.reference_interval()
+        self.assertEqual(round(lower_limit), 6, 'Should be 6')
+        self.assertEqual(round(upper_limit), 39, 'Should be 39')
 
     def test_min_max_val(self):
-
         t_combo_cal = BioStatistics(cal_arr_combo)
-        self.assertEqual(t_combo_cal.max_val(), 10.6, "Should be 10.6")
-        self.assertEqual(t_combo_cal.min_val(), 8.8, "Should be 8.8")
+        self.assertEqual(t_combo_cal.max_val(), 10.6, 'Should be 10.6')
+        self.assertEqual(t_combo_cal.min_val(), 8.8, 'Should be 8.8')
 
     def test_mean(self):
         t_combo_cal = BioStatistics(cal_arr_combo)
         self.assertEqual(
             t_combo_cal.mean(),
             9.684166666666666,
-            "Should be 9.684166666666666"
+            'Should be 9.684166666666666'
         )
 
     def test_median(self):
         t_combo_cal = BioStatistics(cal_arr_combo)
-        self.assertEqual(t_combo_cal.median(), 9.7, "Should be 9.7")
+        self.assertEqual(t_combo_cal.median(), 9.7, 'Should be 9.7')
 
     def test_sd(self):
         t_combo_cal = BioStatistics(cal_arr_combo)
         self.assertEqual(
             t_combo_cal.sd(),
             0.32223072306794226,
-            "Should be 0.32223072306794226"
+            'Should be 0.32223072306794226'
         )
 
     def test_var(self):
@@ -281,15 +284,25 @@ class TestRI(unittest.TestCase):
         self.assertEqual(
             t_combo_cal.var(),
             0.10383263888888888,
-            "Should be 0.10383263888888888"
+            'Should be 0.10383263888888888'
         )
 
     def test_lg_trans(self):
-        t_combo_cal = BioStatistics(cal_arr_combo)
+        lloq = 0.5
+        data_with_zeroes = BioStatistics(np.array([0, 1, 2]))
+        data_with_nans = np.array(['nan', 1, 2]).astype(float)
+        data_with_halved_lloq = np.array([lloq / 2, 1, 2]).astype(float)
+
         np.testing.assert_array_equal(
-            t_combo_cal.log_transform(),
-            np.log(cal_arr_combo.astype(float)),
-            "Array should match"
+            data_with_zeroes.log_transform(),
+            np.log(data_with_nans),
+            'Array should match'
+        )
+
+        np.testing.assert_array_equal(
+            data_with_zeroes.log_transform(lloq),
+            np.log(data_with_halved_lloq),
+            'Array should match'
         )
 
     def test_exp_trans(self):
@@ -297,7 +310,7 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.exp_transform(),
             np.exp(cal_arr_combo.astype(float)),
-            "Array should match"
+            'Array should match'
         )
 
     def test_sq_root_trans(self):
@@ -305,7 +318,7 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.square_root_transform(),
             np.sqrt(cal_arr_combo.astype(float)),
-            "Array should match"
+            'Array should match'
         )
 
     def test_cub_root_trans(self):
@@ -313,7 +326,7 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.cube_root_transform(),
             np.cbrt(cal_arr_combo.astype(float)),
-            "Array should match"
+            'Array should match'
         )
 
     def test_f_score(self):
@@ -321,7 +334,7 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.z_score(),
             sc.stats.zscore(cal_arr_combo.astype(float)),
-            "Array should match"
+            'Array should match'
         )
 
     def test_norm(self):
@@ -329,7 +342,7 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.normalize(),
             t_combo_cal.normalize(),
-            "Array should match"
+            'Array should match'
         )
 
     def test_co_eff_skewness_kurt(self):
@@ -337,12 +350,12 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.co_eff_skewness(),
             t_combo_cal.co_eff_skewness(),
-            "Array should match"
+            'Array should match'
         )
         np.testing.assert_array_equal(
             t_combo_cal.co_eff_kurtosis(),
             t_combo_cal.co_eff_kurtosis(),
-            "Array should match"
+            'Array should match'
         )
 
     def test_shap_wilk(self):
@@ -350,8 +363,39 @@ class TestRI(unittest.TestCase):
         np.testing.assert_array_equal(
             t_combo_cal.shapiro_wilk_test(),
             t_combo_cal.shapiro_wilk_test(),
-            "Array should match"
+            'Array should match'
         )
+
+    def test_is_normally_distributed(self):
+        normally_distributed_data = BioStatistics(np.random.normal(size=300))
+        skewed_data = BioStatistics(np.random.uniform(size=300))
+        self.assertEqual(
+            normally_distributed_data.is_normally_distributed(),
+            True,
+            'Should be True'
+        )
+        self.assertEqual(
+            skewed_data.is_normally_distributed(),
+            False,
+            'Should be False'
+        )
+
+    def test_contains_zeroes(self):
+        self.assertEqual(
+            BioStatistics([1, 0, 3]).contains_zeroes(),
+            True,
+            'Should be True'
+        )
+        self.assertEqual(
+            BioStatistics([1, 2, 3]).contains_zeroes(),
+            False,
+            'Should be False'
+        )
+
+    def test_ci_percentiles(self):
+        lower_percentile, upper_percentile = BioStatistics([]).ci_percentiles(95)
+        self.assertEqual(lower_percentile, 2.5, 'Should be 2.5')
+        self.assertEqual(upper_percentile, 97.5, 'Should be 97.5')
 
 
 if __name__ == '__main__':
