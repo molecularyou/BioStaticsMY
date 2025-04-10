@@ -146,6 +146,9 @@ class BioStatistics:
     def is_normally_distributed(self):
         return True if self.shapiro_wilk_test().pvalue > 0.05 else False
 
+    def contains_zeroes(self):
+        return False if np.all(self.array) else True
+
     def ci_percentiles(self, confidence_interval):
         """
         Calculates lower and upper percentiles given a confidence interval
