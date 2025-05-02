@@ -288,21 +288,12 @@ class TestRI(unittest.TestCase):
         )
 
     def test_lg_trans(self):
-        lloq = 0.5
-        data_with_zeroes = BioStatistics(np.array([0, 1, 2]))
-        data_with_nans = np.array(['nan', 1, 2]).astype(float)
-        data_with_halved_lloq = np.array([lloq / 2, 1, 2]).astype(float)
+        t_combo_cal = BioStatistics(cal_arr_combo)
 
         np.testing.assert_array_equal(
-            data_with_zeroes.log_transform(),
-            np.log(data_with_nans),
-            'Array should match'
-        )
-
-        np.testing.assert_array_equal(
-            data_with_zeroes.log_transform(lloq),
-            np.log(data_with_halved_lloq),
-            'Array should match'
+            t_combo_cal.log_transform(),
+            np.log(cal_arr_combo.astype(float)),
+            "Array should match"
         )
 
     def test_exp_trans(self):
@@ -380,22 +371,86 @@ class TestRI(unittest.TestCase):
             'Should be False'
         )
 
-    def test_contains_zeroes(self):
-        self.assertEqual(
-            BioStatistics([1, 0, 3]).contains_zeroes(),
-            True,
-            'Should be True'
-        )
-        self.assertEqual(
-            BioStatistics([1, 2, 3]).contains_zeroes(),
-            False,
-            'Should be False'
-        )
-
     def test_ci_percentiles(self):
         lower_percentile, upper_percentile = BioStatistics([]).ci_percentiles(95)
         self.assertEqual(lower_percentile, 2.5, 'Should be 2.5')
         self.assertEqual(upper_percentile, 97.5, 'Should be 97.5')
+
+    def test_blq_replacement_value(self):
+        self.assertEqual(
+            BioStatistics([]).blq_replacement_value(),
+            'nan',
+            'Should be nan'
+        )
+        self.assertEqual(
+            BioStatistics([]).blq_replacement_value(5),
+            2.5,
+            'Should be 2.5'
+        )
+
+    def test_alq_replacement_value(self):
+        self.assertEqual(
+            BioStatistics([]).alq_replacement_value(),
+            'nan',
+            'Should be nan'
+        )
+        self.assertEqual(
+            BioStatistics([]).alq_replacement_value(5),
+            7.5,
+            'Should be 7.5'
+        )
+
+    def test_replace_less_than_sign(self):
+        data = np.array([1, 'BLQ < 73.525', 'BLQ < 14.53'])
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_less_than_sign(data, 'nan'),
+            np.array(['1', 'nan', 'nan']),
+            'Array should match'
+        )
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_less_than_sign(data, 2.5),
+            np.array(['1', '2.5', '2.5']),
+            'Array should match'
+        )
+
+    def test_replace_alq(self):
+        data = np.array([1, 'ALQ ( 40820 )', 'ALQ ( 64010 )'])
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_alq(data, 'nan'),
+            np.array(['1', 'nan', 'nan']),
+            'Array should match'
+        )
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_alq(data, 7.5),
+            np.array(['1', '7.5', '7.5']),
+            'Array should match'
+        )
+
+    def test_replace_zeros(self):
+        data = np.array([1, 0, 0])
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_zeros(data, 'nan'),
+            np.array([1, 'nan', 'nan']).astype(float),
+            'Array should match'
+        )
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_zeros(data, 2.5),
+            np.array([1, 2.5, 2.5]),
+            'Array should match'
+        )
+
+    def test_clean_array(self):
+        data = np.array([0, 1, 'BLQ < 73.525', 'ALQ ( 40820 )'])
+        np.testing.assert_array_equal(
+            BioStatistics(data).clean_array(),
+            np.array([1, 'nan', 'nan', 'nan']).astype(float),
+            'Array should match'
+        )
+        np.testing.assert_array_equal(
+            BioStatistics(data).clean_array(5, 5),
+            np.array([1, 2.5, 2.5, 7.5]),
+            'Array should match'
+        )
 
 
 if __name__ == '__main__':
