@@ -79,30 +79,17 @@ class BioStatistics:
         result = np.percentile(arr, 75) - np.percentile(arr, 25)
         return result
 
-    def log_transform(self, lloq=None):
+    def log_transform(self):
         """
         Log transformation of the data
-
-        Converts all zeroes to the biomarker LLOQ / 2 if present,
-        otherwise converts zeroes to nan
         """
-        float_array = self.array.astype(float)
-
-        if self.contains_zeroes():
-            if not lloq:
-                replacement_value = 'nan'
-            else:
-                replacement_value = float(lloq) / 2
-
-            float_array[float_array == 0] = replacement_value
-
-        return np.log(float_array)
+        return np.log(self.array)
 
     def exp_transform(self):
         """
         Exponential transformation of the data
         """
-        ex_transform = np.exp(self.array.astype(float))
+        ex_transform = np.exp(self.array)
         return ex_transform
 
     def square_root_transform(self):
@@ -153,14 +140,12 @@ class BioStatistics:
         """
         Calculates whether a data set is normally distributed
         """
-        shap_wilk_val = sc.stats.shapiro(self.array)
+        nan_array = self.clean_array()
+        shap_wilk_val = sc.stats.shapiro(nan_array)
         return shap_wilk_val
 
     def is_normally_distributed(self):
         return True if self.shapiro_wilk_test().pvalue > 0.05 else False
-
-    def contains_zeroes(self):
-        return False if np.all(self.array) else True
 
     def ci_percentiles(self, confidence_interval):
         """
@@ -172,17 +157,45 @@ class BioStatistics:
         upper_percentile = 100 - lower_percentile
         return lower_percentile, upper_percentile
 
+    def blq_replacement_value(self, lloq=None):
+        """
+        Use nan as a replacement value if no LLOQ provided
+        Otherwise, use LLOQ / 2
+        """
+        if not lloq:
+            return 'nan'
+        else:
+            return float(lloq) / 2
+
+    def replace_zeros(self, array, replacement_value):
+        """
+        Replaces 0 values in an array with the specified replacement value
+        """
+        float_array = array.astype(float)
+        float_array[float_array == 0] = replacement_value
+        return float_array
+
+    def clean_array(self, lloq=None):
+        blq_replacement_value = self.blq_replacement_value(lloq)
+
+        cleaned_array = self.replace_zeros(
+            self.array, blq_replacement_value
+        )
+
+        return np.sort(cleaned_array)
+
     def reference_interval(self, lloq=None):
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
         lower_percentile, upper_percentile = self.ci_percentiles(DEFAULT_CI)
+        cleaned_array = self.clean_array(lloq)
 
         if self.is_normally_distributed() is True:
-            lower_limit = np.nanpercentile(self.array, lower_percentile)
-            upper_limit = np.nanpercentile(self.array, upper_percentile)
+            lower_limit = np.nanpercentile(cleaned_array, lower_percentile)
+            upper_limit = np.nanpercentile(cleaned_array, upper_percentile)
         else:
-            transformed_data = self.log_transform(lloq)
+            transformed_data = np.log(cleaned_array)
             lower_limit = np.exp(
                 np.nanpercentile(transformed_data, lower_percentile)
             )
