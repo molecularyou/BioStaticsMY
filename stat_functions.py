@@ -79,30 +79,17 @@ class BioStatistics:
         result = np.percentile(arr, 75) - np.percentile(arr, 25)
         return result
 
-    def log_transform(self, lloq=None):
+    def log_transform(self):
         """
         Log transformation of the data
-
-        Converts all zeroes to the biomarker LLOQ / 2 if present,
-        otherwise converts zeroes to nan
         """
-        float_array = self.array.astype(float)
-
-        if self.contains_zeroes():
-            if not lloq:
-                replacement_value = 'nan'
-            else:
-                replacement_value = float(lloq) / 2
-
-            float_array[float_array == 0] = replacement_value
-
-        return np.log(float_array)
+        return np.log(self.array)
 
     def exp_transform(self):
         """
         Exponential transformation of the data
         """
-        ex_transform = np.exp(self.array.astype(float))
+        ex_transform = np.exp(self.array)
         return ex_transform
 
     def square_root_transform(self):
@@ -153,14 +140,12 @@ class BioStatistics:
         """
         Calculates whether a data set is normally distributed
         """
-        shap_wilk_val = sc.stats.shapiro(self.array)
+        nan_array = self.clean_array()
+        shap_wilk_val = sc.stats.shapiro(nan_array)
         return shap_wilk_val
 
     def is_normally_distributed(self):
         return True if self.shapiro_wilk_test().pvalue > 0.05 else False
-
-    def contains_zeroes(self):
-        return False if np.all(self.array) else True
 
     def ci_percentiles(self, confidence_interval):
         """
@@ -172,17 +157,96 @@ class BioStatistics:
         upper_percentile = 100 - lower_percentile
         return lower_percentile, upper_percentile
 
-    def reference_interval(self, lloq=None):
+    def blq_replacement_value(self, lloq=None):
+        """
+        Use nan as a replacement value if no LLOQ provided
+        Otherwise, use LLOQ / 2
+        """
+        if not lloq:
+            return 'nan'
+        else:
+            return float(lloq) / 2
+
+    def alq_replacement_value(self, uloq=None):
+        """
+        Use nan as a replacement value if no ULOQ provided
+        Otherwise, use ULOQ * 1.5
+        """
+        if not uloq:
+            return 'nan'
+        else:
+            return float(uloq) * 1.5
+
+    def replace_less_than_sign(self, array, replacement_value):
+        """
+        Replaces values containing '<' (e.g. 'BLQ < 7.5394') in an array
+        with the specified replacement value
+        """
+        str_array = array.astype(str)
+        return (
+            np.where(
+                np.char.find(str_array, '<') != -1,
+                str(replacement_value),
+                str_array
+            )
+        )
+
+    def replace_alq(self, array, replacement_value):
+        """
+        Replaces values containing 'ALQ' (e.g. 'ALQ ( 40820 )') in an array
+        with the specified replacement value
+        """
+        str_array = array.astype(str)
+        return (
+            np.where(
+                np.char.find(str_array, 'ALQ') != -1,
+                str(replacement_value),
+                str_array
+            )
+        )
+
+    def replace_zeros(self, array, replacement_value):
+        """
+        Replaces 0 values in an array with the specified replacement value
+        """
+        float_array = array.astype(float)
+        float_array[float_array == 0] = replacement_value
+        return float_array
+
+    def clean_array(self, lloq=None, uloq=None):
+        """
+        Converts below the limit of detection values (e.g. <, 0)
+        to the biomarker LLOQ / 2 if present,
+        converts above the limit of detection values (e.g. ALQ)
+        to the biomarker ULOQ * 1.5 if present,
+        otherwise convert these values to nan
+        """
+        blq_replacement_value = self.blq_replacement_value(lloq)
+
+        cleaned_array = self.replace_less_than_sign(
+            self.array, blq_replacement_value
+        )
+        cleaned_array = self.replace_alq(
+            cleaned_array, self.alq_replacement_value(uloq)
+        )
+        cleaned_array = self.replace_zeros(
+            cleaned_array, blq_replacement_value
+        )
+
+        return np.sort(cleaned_array)
+
+    def reference_interval(self, lloq=None, uloq=None):
         """
         Calculates reference interval in accordance to CLSI guidelines
         """
         lower_percentile, upper_percentile = self.ci_percentiles(DEFAULT_CI)
+        cleaned_array = self.clean_array(lloq, uloq)
 
         if self.is_normally_distributed() is True:
-            lower_limit = np.nanpercentile(self.array, lower_percentile)
-            upper_limit = np.nanpercentile(self.array, upper_percentile)
+            lower_limit = np.nanpercentile(cleaned_array, lower_percentile)
+            upper_limit = np.nanpercentile(cleaned_array, upper_percentile)
         else:
-            transformed_data = self.log_transform(lloq)
+            transformed_data = np.log(cleaned_array)
             lower_limit = np.exp(
                 np.nanpercentile(transformed_data, lower_percentile)
             )
@@ -225,31 +289,42 @@ class DFmaker:
     @:param biofluid is the type of fluid being analyzed "serum" or "plasma"
     @:param units is the concentration units
     """
-    def __init__(self, df_in, age=None, sex=None, biofluid=None, units=None):
+    def __init__(
+        self,
+        df_in,
+        detection_limit_input_file_name,
+        age=None,
+        sex=None,
+        biofluid=None,
+        units=None
+    ):
         self.df_in = df_in
+        self.detection_limit_input_file_name = detection_limit_input_file_name
         self.age = age or DEFAULT_AGE
         self.sex = sex or DEFAULT_SEX
         self.biofluid = biofluid or DEFAULT_BIOFLUID
         self.units = units or DEFAULT_UNITS
 
-    def biomarker_dict(self):
+    def biomarker_dict(self, file_name):
         """
         Creates a dictionary of biomarker names mapped to IDs and LLOQs
-        using data stored in MYBiomarkers.csv
+        using data stored in an input file
 
-        e.g. { 'Alanine': { 'id': 'M00000036', 'lloq': 1.093290116 } }
+        e.g. { 'Alanine': { 'id': 'M00000036', 'lloq': 1.09, 'uloq': 7816.9 } }
         """
 
         biomarker_dict = {}
 
-        with open('MYBiomarkers.csv', newline='') as csvfile:
+        with open(file_name, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 lloq = None if not row['LLOQ'] else float(row['LLOQ'])
+                uloq = None if not row['ULOQ'] else float(row['ULOQ'])
 
                 biomarker_dict[row['Biomarker']] = {
                     "id": row['MYID'],
-                    "lloq": lloq
+                    "lloq": lloq,
+                    'uloq': uloq
                 }
 
         return biomarker_dict
@@ -258,7 +333,9 @@ class DFmaker:
         """
         This is where the processing for the Reference Range happens
         """
-        biomarker_dict = self.biomarker_dict()
+        biomarker_dict = self.biomarker_dict(
+            self.detection_limit_input_file_name
+        )
 
         df = self.df_in.T
         ref_df = self.df_in
@@ -284,7 +361,8 @@ class DFmaker:
 
             if col_list[z] in biomarker_dict.keys():
                 lloq = biomarker_dict[col_list[z]]['lloq']
-                lower_limit, upper_limit = p.reference_interval(lloq)
+                uloq = biomarker_dict[col_list[z]]['uloq']
+                lower_limit, upper_limit = p.reference_interval(lloq, uloq)
 
                 ref_dic.update({
                     col_list[z]: [
