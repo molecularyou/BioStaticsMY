@@ -400,29 +400,52 @@ class TestRI(unittest.TestCase):
             'Should be 7.5'
         )
 
-    def test_replace_less_than_sign(self):
-        data = np.array([1, 'BLQ < 73.525', 'BLQ < 14.53'])
+    def test_replace_string_value_in_array(self):
+        alq_array = np.array([1, 'ALQ ( 40820 )', 'ALQ ( 64010 )'])
+        blq_nd_array = np.array([1, 'ND', 'BLQ < 14.53'])
+
         np.testing.assert_array_equal(
-            BioStatistics([]).replace_less_than_sign(data, 'nan'),
+            BioStatistics([]).replace_string_value_in_array(
+                alq_array, 'ALQ', 'nan'
+            ),
             np.array(['1', 'nan', 'nan']),
             'Array should match'
         )
         np.testing.assert_array_equal(
-            BioStatistics([]).replace_less_than_sign(data, 2.5),
-            np.array(['1', '2.5', '2.5']),
+            BioStatistics([]).replace_string_value_in_array(
+                alq_array, 'ALQ', 7.5
+            ),
+            np.array(['1', '7.5', '7.5']),
             'Array should match'
         )
 
-    def test_replace_alq(self):
-        data = np.array([1, 'ALQ ( 40820 )', 'ALQ ( 64010 )'])
         np.testing.assert_array_equal(
-            BioStatistics([]).replace_alq(data, 'nan'),
-            np.array(['1', 'nan', 'nan']),
+            BioStatistics([]).replace_string_value_in_array(
+                blq_nd_array, '<', 'nan'
+            ),
+            np.array(['1', 'ND', 'nan']),
             'Array should match'
         )
         np.testing.assert_array_equal(
-            BioStatistics([]).replace_alq(data, 7.5),
-            np.array(['1', '7.5', '7.5']),
+            BioStatistics([]).replace_string_value_in_array(
+                blq_nd_array, '<', 2.5
+            ),
+            np.array(['1', 'ND', '2.5']),
+            'Array should match'
+        )
+
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_string_value_in_array(
+                blq_nd_array, 'ND', 'nan'
+            ),
+            np.array(['1', 'nan', 'BLQ < 14.53']),
+            'Array should match'
+        )
+        np.testing.assert_array_equal(
+            BioStatistics([]).replace_string_value_in_array(
+                blq_nd_array, 'ND', 2.5
+            ),
+            np.array(['1', '2.5', 'BLQ < 14.53']),
             'Array should match'
         )
 
@@ -440,7 +463,7 @@ class TestRI(unittest.TestCase):
         )
 
     def test_clean_array(self):
-        data = np.array([0, 1, 'BLQ < 73.525', 'ALQ ( 40820 )'])
+        data = np.array([1, 'ND', 'BLQ < 73.525', 'ALQ ( 40820 )'])
         np.testing.assert_array_equal(
             BioStatistics(data).clean_array(),
             np.array([1, 'nan', 'nan', 'nan']).astype(float),

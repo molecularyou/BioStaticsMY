@@ -3,6 +3,11 @@ import numpy as np
 import scipy as sc
 import pandas as pd
 
+print('CSV: ' + csv.__version__)
+print('NUMPY: ' + np.__version__)
+print('SCIPY: ' + sc.__version__)
+print('PANDAS: ' + pd.__version__)
+
 DEFAULT_CI = 95
 DEFAULT_AGE = 'Adult'
 DEFAULT_SEX = 'Both'
@@ -177,29 +182,20 @@ class BioStatistics:
         else:
             return float(uloq) * 1.5
 
-    def replace_less_than_sign(self, array, replacement_value):
+    def replace_string_value_in_array(
+        self,
+        array,
+        target_value,
+        replacement_value
+    ):
         """
-        Replaces values containing '<' (e.g. 'BLQ < 7.5394') in an array
-        with the specified replacement value
-        """
-        str_array = array.astype(str)
-        return (
-            np.where(
-                np.char.find(str_array, '<') != -1,
-                str(replacement_value),
-                str_array
-            )
-        )
-
-    def replace_alq(self, array, replacement_value):
-        """
-        Replaces values containing 'ALQ' (e.g. 'ALQ ( 40820 )') in an array
-        with the specified replacement value
+        Replaces values containing the target value in an array
+        (e.g. '<', ALQ', 'ND') with the specified replacement value
         """
         str_array = array.astype(str)
         return (
             np.where(
-                np.char.find(str_array, 'ALQ') != -1,
+                np.char.find(str_array, target_value) != -1,
                 str(replacement_value),
                 str_array
             )
@@ -221,19 +217,23 @@ class BioStatistics:
         to the biomarker ULOQ * 1.5 if present,
         otherwise convert these values to nan
         """
+        alq_replacement_value = self.alq_replacement_value(uloq)
         blq_replacement_value = self.blq_replacement_value(lloq)
 
-        cleaned_array = self.replace_less_than_sign(
-            self.array, blq_replacement_value
+        cleaned_array = self.replace_string_value_in_array(
+            self.array, '<', blq_replacement_value
         )
-        cleaned_array = self.replace_alq(
-            cleaned_array, self.alq_replacement_value(uloq)
+        cleaned_array = self.replace_string_value_in_array(
+            cleaned_array, 'ND', blq_replacement_value
+        )
+        cleaned_array = self.replace_string_value_in_array(
+            cleaned_array, 'ALQ', alq_replacement_value
         )
         cleaned_array = self.replace_zeros(
             cleaned_array, blq_replacement_value
         )
 
-        return np.sort(cleaned_array)
+        return np.sort(cleaned_array.astype(float))
 
     def reference_interval(self, lloq=None, uloq=None):
         """
