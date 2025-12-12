@@ -463,15 +463,15 @@ class TestRI(unittest.TestCase):
         )
 
     def test_clean_array(self):
-        data = np.array([1, 'ND', 'BLQ < 73.525', 'ALQ ( 40820 )'])
+        data = np.array([1, 'ND', 'BLQ < 73.525', 'ALQ ( 40820 )', 'NR'])
         np.testing.assert_array_equal(
             BioStatistics(data).clean_array(),
-            np.array([1, 'nan', 'nan', 'nan']).astype(float),
+            np.array([1, 'nan', 'nan', 'nan', 'nan']).astype(float),
             'Array should match'
         )
         np.testing.assert_array_equal(
             BioStatistics(data).clean_array(5, 5),
-            np.array([1, 2.5, 2.5, 7.5]),
+            np.array([1, 2.5, 2.5, 7.5, 'nan']).astype(float),
             'Array should match'
         )
 
