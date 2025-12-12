@@ -229,6 +229,9 @@ class BioStatistics:
         cleaned_array = self.replace_string_value_in_array(
             cleaned_array, 'ALQ', alq_replacement_value
         )
+        cleaned_array = self.replace_string_value_in_array(
+            cleaned_array, 'NR', 'nan'
+        )
         cleaned_array = self.replace_zeros(
             cleaned_array, blq_replacement_value
         )
